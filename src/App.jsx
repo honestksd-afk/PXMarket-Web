@@ -196,6 +196,21 @@ export default function App() {
 
         {/* Product List */}
         <main className="flex-1 px-6 py-4 space-y-4 pb-48">
+          {/* Store Finder Banner */}
+          <button
+            onClick={() => setShowStores(true)}
+            className="w-full bg-gradient-to-r from-indigo-600 to-indigo-500 rounded-2xl p-4 flex items-center gap-3 shadow-lg shadow-indigo-200 active:scale-[0.98] transition-transform"
+          >
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <MapPin size={20} className="text-white" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-[13px] font-black text-white">내 주변 PX 영외마트 찾기</p>
+              <p className="text-[10px] text-indigo-200 font-bold">전국 {PX_STORES.length}개소 위치·운영시간·전화번호</p>
+            </div>
+            <ArrowUpRight size={18} className="text-white/60 flex-shrink-0" />
+          </button>
+
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-black text-slate-400 tracking-widest flex items-center gap-2">
               {tab === 'hot' ? <><Flame size={12} /> 인기상품</> : tab === 'pick' ? <><Star size={12} /> 추천상품</> : <><Tag size={12} /> 전체상품</>}
