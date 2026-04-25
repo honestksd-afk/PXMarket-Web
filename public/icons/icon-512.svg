@@ -1,5 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="113" fill="#4f46e5"/>
-  <text x="50%" y="38%" text-anchor="middle" dominant-baseline="middle" font-family="Arial,sans-serif" font-weight="900" font-size="113" fill="white">PX</text>
-  <text x="50%" y="65%" text-anchor="middle" dominant-baseline="middle" font-family="Arial,sans-serif" font-weight="700" font-size="56" fill="rgba(255,255,255,0.8)">MARKET</text>
+  <defs>
+    <clipPath id="clip">
+      <rect width="512" height="512" rx="113"/>
+    </clipPath>
+  </defs>
+  <!-- 배경 국방색 -->
+  <rect width="512" height="512" rx="113" fill="#4A5D23"/>
+  <!-- 카모플라주 패턴 -->
+  <g clip-path="url(#clip)" opacity="0.5">
+    <ellipse cx="80" cy="100" rx="120" ry="80" fill="#3B4A1C" transform="rotate(-20 80 100)"/>
+    <ellipse cx="400" cy="60" rx="100" ry="70" fill="#5C6B2F" transform="rotate(15 400 60)"/>
+    <ellipse cx="300" cy="200" rx="140" ry="60" fill="#3B4A1C" transform="rotate(-10 300 200)"/>
+    <ellipse cx="60" cy="350" rx="130" ry="70" fill="#5C6B2F" transform="rotate(25 60 350)"/>
+    <ellipse cx="450" cy="320" rx="110" ry="90" fill="#3B4A1C" transform="rotate(-15 450 320)"/>
+    <ellipse cx="200" cy="450" rx="150" ry="60" fill="#5C6B2F" transform="rotate(10 200 450)"/>
+    <ellipse cx="480" cy="480" rx="100" ry="80" fill="#3B4A1C" transform="rotate(-30 480 480)"/>
+    <ellipse cx="150" cy="180" rx="60" ry="100" fill="#6B7B3A" transform="rotate(40 150 180)"/>
+    <ellipse cx="380" cy="420" rx="80" ry="50" fill="#6B7B3A" transform="rotate(-25 380 420)"/>
+    <ellipse cx="250" cy="80" rx="70" ry="40" fill="#2E3D15"/>
+    <ellipse cx="100" cy="480" rx="90" ry="50" fill="#2E3D15" transform="rotate(20 100 480)"/>
+    <ellipse cx="440" cy="200" rx="60" ry="80" fill="#2E3D15" transform="rotate(-35 440 200)"/>
+  </g>
+  <!-- PX 텍스트 -->
+  <text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-family="Arial,Helvetica,sans-serif" font-weight="900" font-size="200" fill="white" letter-spacing="-8">PX</text>
+  <!-- 하단 라인 악센트 -->
+  <rect x="156" y="360" width="200" height="6" rx="3" fill="white" opacity="0.6"/>
 </svg>
