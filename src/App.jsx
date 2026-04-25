@@ -330,11 +330,6 @@ export default function App() {
 
         {/* Footer */}
         <footer className="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-xl border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-50">
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-3 rounded-2xl mb-3 border border-orange-100/50 flex items-center justify-center gap-2">
-            <Truck size={14} className="text-orange-500 flex-shrink-0" />
-            <span className="text-[11px] font-black text-orange-600 whitespace-nowrap">품절?</span>
-            <span className="text-[10px] text-orange-500/80 font-bold whitespace-nowrap">터치하면 쿠팡 로켓배송 구매!</span>
-          </div>
           <p className="text-[8px] text-slate-300 font-medium text-center leading-relaxed mb-2">
             이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
           </p>
