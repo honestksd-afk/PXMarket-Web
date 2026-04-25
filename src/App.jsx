@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, Zap, ArrowUpRight, CreditCard, Info, Tag, X, ArrowDownAZ, ArrowDownUp, Flame, Star, MapPin, Phone, Clock, ShoppingCart, Truck } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { Search, Zap, ArrowUpRight, CreditCard, Info, Tag, X, Flame, Star, MapPin, Phone, Clock, ShoppingCart, Truck, ClipboardList, Heart, Trash2, Minus, Plus } from 'lucide-react';
 import { RAW_DATA } from './data.js';
 import { PX_STORES } from './stores.js';
 
@@ -29,6 +29,52 @@ export default function App() {
   const [storeSearch, setStoreSearch] = useState('');
   const [sortBy, setSortBy] = useState('default');
   const [tab, setTab] = useState('all');
+  const [showCart, setShowCart] = useState(false);
+
+  // 장바구니: { id: 수량 }
+  const [cart, setCart] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('px-cart') || '{}');
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('px-cart', JSON.stringify(cart));
+  }, [cart]);
+
+  const toggleCart = useCallback((e, id) => {
+    e.stopPropagation();
+    setCart(prev => {
+      const next = { ...prev };
+      if (next[id]) delete next[id];
+      else next[id] = 1;
+      return next;
+    });
+  }, []);
+
+  const updateQty = useCallback((id, delta) => {
+    setCart(prev => {
+      const next = { ...prev };
+      const qty = (next[id] || 1) + delta;
+      if (qty <= 0) delete next[id];
+      else next[id] = qty;
+      return next;
+    });
+  }, []);
+
+  const clearCart = useCallback(() => setCart({}), []);
+
+  const cartItems = useMemo(() => {
+    return Object.keys(cart).map(id => RAW_DATA.find(i => i.id === Number(id))).filter(Boolean);
+  }, [cart]);
+
+  const cartTotal = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.px * (cart[item.id] || 1), 0);
+  }, [cartItems, cart]);
+
+  const cartCount = useMemo(() => {
+    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  }, [cart]);
 
   // 추천상품: 카테고리별 최고가 + 최저가
   const RECOMMENDED_IDS = useMemo(() => {
@@ -101,6 +147,15 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowCart(true)}
+                  className="p-2 text-slate-400 hover:text-indigo-600 transition-colors relative"
+                >
+                  <ClipboardList size={20} />
+                  {cartCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">{cartCount > 99 ? '99+' : cartCount}</span>
+                  )}
+                </button>
                 <button
                   onClick={() => setShowStores(true)}
                   className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
@@ -246,11 +301,20 @@ export default function App() {
                   <p className="text-[9px] text-orange-400 font-bold mt-0.5">품절 시 쿠팡에서 바로 구매 →</p>
                 </div>
 
-                <div className="flex flex-col items-center gap-1">
-                  <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all shadow-sm border border-orange-100 group-hover:border-orange-500 group-hover:shadow-orange-200 group-hover:shadow-md">
-                    <ShoppingCart size={16} />
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={(e) => toggleCart(e, item.id)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                      cart[item.id]
+                      ? 'bg-red-500 text-white shadow-sm shadow-red-200'
+                      : 'bg-slate-50 text-slate-300 hover:bg-red-50 hover:text-red-400'
+                    }`}
+                  >
+                    <Heart size={14} fill={cart[item.id] ? 'currentColor' : 'none'} />
+                  </button>
+                  <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                    <ShoppingCart size={14} />
                   </div>
-                  <span className="text-[8px] font-black text-orange-300 group-hover:text-orange-500 tracking-tighter">쿠팡</span>
                 </div>
               </div>
             ))
@@ -328,6 +392,75 @@ export default function App() {
                 가격 및 재고는 각 PX 매장에서 확인하시기 바랍니다.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Modal */}
+      {showCart && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center" onClick={() => setShowCart(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div
+            className="relative bg-white rounded-t-3xl w-full max-w-md shadow-2xl max-h-[85vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <ClipboardList size={20} className="text-indigo-600" />
+                  <h2 className="text-lg font-black text-slate-900">PX 쇼핑 리스트</h2>
+                  {cartCount > 0 && <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{cartCount}개</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {cartCount > 0 && (
+                    <button onClick={clearCart} className="text-[11px] font-bold text-red-400 hover:text-red-600 transition-colors">전체 삭제</button>
+                  )}
+                  <button onClick={() => setShowCart(false)} className="p-1 text-slate-300 hover:text-slate-600 transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-400 font-medium">PX 방문 전 살 물건을 미리 담아두세요</p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {cartItems.length > 0 ? cartItems.map(item => (
+                <div key={item.id} className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3">
+                  <span className="text-2xl flex-shrink-0">{CAT_EMOJI[item.cat] || '📦'}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
+                    <p className="text-[10px] text-slate-400 font-bold">{item.px.toLocaleString()}원</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
+                      {cart[item.id] <= 1 ? <Trash2 size={12} /> : <Minus size={12} />}
+                    </button>
+                    <span className="text-sm font-black text-slate-700 w-5 text-center">{cart[item.id]}</span>
+                    <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-200 transition-colors">
+                      <Plus size={12} />
+                    </button>
+                  </div>
+                </div>
+              )) : (
+                <div className="text-center py-16">
+                  <div className="inline-flex w-16 h-16 bg-slate-50 rounded-full items-center justify-center text-slate-200 mb-4">
+                    <Heart size={32} />
+                  </div>
+                  <p className="text-slate-400 font-bold text-sm mb-1">리스트가 비었어요</p>
+                  <p className="text-[11px] text-slate-300 font-medium">상품의 하트를 눌러 담아보세요</p>
+                </div>
+              )}
+            </div>
+
+            {cartCount > 0 && (
+              <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-bold text-slate-500">예상 합계</span>
+                  <span className="text-xl font-black text-slate-900">{cartTotal.toLocaleString()}원</span>
+                </div>
+                <p className="text-[9px] text-slate-400 font-medium text-center">실제 가격은 PX 매장에서 확인하세요</p>
+              </div>
+            )}
           </div>
         </div>
       )}
