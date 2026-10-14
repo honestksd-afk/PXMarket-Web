@@ -1,7 +1,7 @@
 {
   "name": "PX MARKET 2026",
   "short_name": "PX MARKET",
-  "description": "2026 PX 신규상품 카탈로그",
+  "description": "PX 전체상품 가격 카탈로그",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F8FAFC",

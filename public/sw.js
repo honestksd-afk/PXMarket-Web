@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pxmarket-v1';
+const CACHE_NAME = 'pxmarket-v2';
 const ASSETS = ['/', '/index.html'];
 
 self.addEventListener('install', (e) => {

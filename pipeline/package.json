@@ -1,0 +1,9 @@
+{
+  "name": "pxmarket-pipeline",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "categories": "node scripts/apply-categories.mjs data/category-fixes.txt"
+  }
+}

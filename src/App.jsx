@@ -1,27 +1,17 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, Zap, ArrowUpRight, CreditCard, Info, Tag, X, Flame, Star, MapPin, Phone, Clock, ShoppingCart, Truck, ClipboardList, Heart, Trash2, Minus, Plus } from 'lucide-react';
-import { RAW_DATA } from './data.js';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { Search, Zap, ArrowUpRight, CreditCard, Info, Tag, X, Flame, MapPin, Phone, Clock, ShoppingCart, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
 import { PX_STORES } from './stores.js';
+import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl } from './catalog.js';
 
-const PARTNERS_ID = "cmyTxY";
-
-const CAT_EMOJI = {
-  '전체': '🛒',
-  '주류': '🍷',
-  '유제품·음료': '🥛',
-  '스킨케어': '✨',
-  '선케어': '☀️',
-  '메이크업': '💄',
-  '헤어케어': '💇',
-  '향수·바디': '🌸',
-  '위생·생활용품': '🧴',
-  '아이스크림': '🍦',
-  '과자·간식': '🍪',
-  '식품·건강기능식품': '🍱',
-  '군장·피복': '🎖️',
-};
+const PAGE_SIZE = 40;
 
 export default function App() {
+  const [products, setProducts] = useState([]);
+  const [meta, setMeta] = useState(null);
+  const [loadError, setLoadError] = useState(false);
+  // 몇 개까지 그렸는지. 필터 조합(key)이 바뀌면 처음 PAGE_SIZE개부터 다시 그림
+  const [visible, setVisible] = useState({ key: '', count: PAGE_SIZE });
+  const sentinelRef = useRef(null);
   const [search, setSearch] = useState('');
   const [selectedCat, setSelectedCat] = useState('전체');
   const [showInfo, setShowInfo] = useState(false);
@@ -39,8 +29,20 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('px-cart', JSON.stringify(cart));
+    try { localStorage.setItem('px-cart', JSON.stringify(cart)); } catch { /* 저장 불가 환경 */ }
   }, [cart]);
+
+  useEffect(() => {
+    loadCatalog()
+      .then(({ products, meta }) => { setProducts(products); setMeta(meta); })
+      .catch(() => setLoadError(true));
+    // 구버전 쇼핑 리스트(숫자 id) → p_code
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem('px-cart') || '{}'); } catch { /* 무시 */ }
+    migrateLegacyCart(saved).then(next => { if (next !== saved) setCart(next); });
+  }, []);
+
+  const productById = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
 
   const toggleCart = useCallback((e, id) => {
     e.stopPropagation();
@@ -65,54 +67,61 @@ export default function App() {
   const clearCart = useCallback(() => setCart({}), []);
 
   const cartItems = useMemo(() => {
-    return Object.keys(cart).map(id => RAW_DATA.find(i => i.id === Number(id))).filter(Boolean);
-  }, [cart]);
+    return Object.keys(cart).map(id => productById.get(id)).filter(Boolean);
+  }, [cart, productById]);
 
   const cartTotal = useMemo(() => {
-    return cartItems.reduce((sum, item) => sum + item.px * (cart[item.id] || 1), 0);
+    return cartItems.reduce((sum, item) => sum + item.price * (cart[item.id] || 1), 0);
   }, [cartItems, cart]);
 
+  // 리스트에 담았지만 이번 데이터에서 내려간(단종) 상품은 개수에서 제외
   const cartCount = useMemo(() => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  }, [cart]);
-
-  // 추천상품: 카테고리별 최고가 + 최저가
-  const RECOMMENDED_IDS = useMemo(() => {
-    const ids = [];
-    const catGroups = {};
-    RAW_DATA.forEach(item => {
-      if (!catGroups[item.cat]) catGroups[item.cat] = [];
-      catGroups[item.cat].push(item);
-    });
-    Object.values(catGroups).forEach(items => {
-      const sorted = [...items].sort((a, b) => b.px - a.px);
-      ids.push(sorted[0].id);
-      ids.push(sorted[sorted.length - 1].id);
-    });
-    return new Set(ids);
-  }, []);
+    return cartItems.reduce((sum, item) => sum + (cart[item.id] || 0), 0);
+  }, [cartItems, cart]);
 
   const categories = useMemo(() => {
-    return ['전체', ...new Set(RAW_DATA.map(item => item.cat))];
-  }, []);
+    const present = new Set(products.map(p => p.category));
+    return ['전체', ...CATEGORY_ORDER.filter(c => present.has(c)), ...[...present].filter(c => !CATEGORY_ORDER.includes(c))];
+  }, [products]);
+
+  const priceDropCount = useMemo(() => products.filter(p => p.prevPrice > p.price).length, [products]);
+
+  const tabs = useMemo(() => [
+    { key: 'all', label: '전체', icon: <Tag size={11} /> },
+    { key: 'new', label: '신규', icon: <Sparkles size={11} /> },
+    { key: 'hot', label: '인기', icon: <Flame size={11} /> },
+    ...(priceDropCount > 0 ? [{ key: 'drop', label: '가격↓', icon: <TrendingDown size={11} /> }] : []),
+  ], [priceDropCount]);
 
   const filteredItems = useMemo(() => {
-    let items = RAW_DATA.filter(item => {
-      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.company.toLowerCase().includes(search.toLowerCase());
-      const matchesCat = selectedCat === '전체' || item.cat === selectedCat;
-      return matchesSearch && matchesCat;
-    });
+    let items = products.filter(item =>
+      (selectedCat === '전체' || item.category === selectedCat) && matches(item, search)
+    );
 
+    if (tab === 'new') items = items.filter(i => i.isNew);
     if (tab === 'hot') items = items.filter(i => i.hot);
-    if (tab === 'pick') items = items.filter(i => RECOMMENDED_IDS.has(i.id));
+    if (tab === 'drop') items = items.filter(i => i.prevPrice > i.price);
 
     if (sortBy === 'name') items = [...items].sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-    else if (sortBy === 'price-asc') items = [...items].sort((a, b) => a.px - b.px);
-    else if (sortBy === 'price-desc') items = [...items].sort((a, b) => b.px - a.px);
+    else if (sortBy === 'price-asc') items = [...items].sort((a, b) => a.price - b.price);
+    else if (sortBy === 'price-desc') items = [...items].sort((a, b) => b.price - a.price);
 
     return items;
-  }, [search, selectedCat, sortBy, tab, RECOMMENDED_IDS]);
+  }, [products, search, selectedCat, sortBy, tab]);
+
+  const filterKey = [search, selectedCat, sortBy, tab].join('|');
+  const visibleCount = visible.key === filterKey ? visible.count : PAGE_SIZE;
+
+  // 목록 끝에 닿으면 다음 묶음을 그림 (상품 2천여 개를 한 번에 그리지 않도록)
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) setVisible({ key: filterKey, count: visibleCount + PAGE_SIZE });
+    }, { rootMargin: '600px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filterKey, visibleCount]);
 
   const filteredStores = useMemo(() => {
     if (!storeSearch) return PX_STORES;
@@ -123,11 +132,11 @@ export default function App() {
   }, [storeSearch]);
 
   const handleItemClick = (item) => {
-    const targetUrl = item.link && item.link.trim() !== ''
-      ? item.link
-      : `https://link.coupang.com/a/${PARTNERS_ID}?q=${encodeURIComponent(item.name)}`;
-    window.open(targetUrl, '_blank');
+    const url = coupangUrl(item);
+    if (url) window.open(url, '_blank', 'noopener');
   };
+
+  const updatedLabel = meta ? `${Number(meta.updatedAt.slice(5, 7))}/${Number(meta.updatedAt.slice(8, 10))} 기준` : '';
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex justify-center font-sans text-slate-900">
@@ -172,7 +181,7 @@ export default function App() {
             </div>
 
             <p className="text-[11px] text-slate-400 font-medium mb-4 whitespace-nowrap overflow-hidden text-ellipsis">
-              PX 신규상품 {RAW_DATA.length}개 · 품절 시 <span className="text-orange-500 font-black">쿠팡 바로 구매</span> 🚀
+              PX 전체상품 {products.length ? products.length.toLocaleString() : '…'}개 · {updatedLabel} · 품절 시 <span className="text-orange-500 font-black">쿠팡 바로 구매</span> 🚀
             </p>
 
             {/* Search Input */}
@@ -180,7 +189,7 @@ export default function App() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <input
                 type="text"
-                placeholder="상품명 또는 업체명으로 검색"
+                placeholder="상품명·업체명 검색 (초성도 OK: ㅅㄹㅁ)"
                 className="w-full bg-slate-100/50 border-2 border-transparent rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -207,11 +216,7 @@ export default function App() {
             {/* Tab & Sort Row */}
             <div className="flex items-center justify-between mt-3">
               <div className="flex flex-row flex-shrink-0 gap-1">
-                {[
-                  { key: 'all', label: '전체', icon: <Tag size={11} /> },
-                  { key: 'hot', label: '인기', icon: <Flame size={11} /> },
-                  { key: 'pick', label: '추천', icon: <Star size={11} /> },
-                ].map(t => (
+                {tabs.map(t => (
                   <button
                     key={t.key}
                     onClick={() => setTab(t.key)}
@@ -225,26 +230,17 @@ export default function App() {
                   </button>
                 ))}
               </div>
-              <div className="flex flex-row flex-shrink-0 gap-0.5">
-                {[
-                  { key: 'default', label: '기본' },
-                  { key: 'name', label: '이름' },
-                  { key: 'price-asc', label: '저가' },
-                  { key: 'price-desc', label: '고가' },
-                ].map(s => (
-                  <button
-                    key={s.key}
-                    onClick={() => setSortBy(s.key)}
-                    className={`px-2 py-1.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all ${
-                      sortBy === s.key
-                      ? 'bg-indigo-100 text-indigo-600'
-                      : 'text-slate-400 hover:bg-slate-100'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                aria-label="정렬"
+                className="flex-shrink-0 bg-indigo-50 text-indigo-600 text-[11px] font-bold rounded-lg px-2 py-1.5 outline-none"
+              >
+                <option value="default">기본순</option>
+                <option value="name">이름순</option>
+                <option value="price-asc">낮은 가격</option>
+                <option value="price-desc">높은 가격</option>
+              </select>
             </div>
           </div>
         </header>
@@ -268,42 +264,67 @@ export default function App() {
 
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-black text-slate-400 tracking-widest flex items-center gap-2">
-              {tab === 'hot' ? <><Flame size={12} /> 인기상품</> : tab === 'pick' ? <><Star size={12} /> 추천상품</> : <><Tag size={12} /> 전체상품</>}
+              {tab === 'hot' ? <><Flame size={12} /> 인기상품</>
+                : tab === 'new' ? <><Sparkles size={12} /> 2026 신규상품</>
+                : tab === 'drop' ? <><TrendingDown size={12} /> 가격 인하</>
+                : <><Tag size={12} /> 전체상품</>}
             </h2>
-            <span className="text-[10px] font-bold text-slate-300">{filteredItems.length}개</span>
+            <span className="text-[10px] font-bold text-slate-300">{filteredItems.length.toLocaleString()}개</span>
           </div>
 
-          {filteredItems.length > 0 ? (
-            filteredItems.map(item => (
+          {!products.length && !loadError ? (
+            Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="h-[112px] rounded-[24px] bg-slate-50 animate-pulse" />
+            ))
+          ) : loadError ? (
+            <div className="text-center py-24">
+              <p className="text-slate-400 font-bold text-sm mb-3">상품 정보를 불러오지 못했습니다.</p>
+              <button onClick={() => window.location.reload()} className="text-xs font-black text-indigo-600">다시 시도</button>
+            </div>
+          ) : filteredItems.length > 0 ? (
+            <>
+            {filteredItems.slice(0, visibleCount).map(item => {
+              const canBuy = 'link' in item;
+              const dropped = item.prevPrice > item.price;
+              return (
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className="group relative bg-white rounded-[24px] p-4 border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-xl hover:border-indigo-100 transition-all cursor-pointer active:scale-[0.97]"
+                className={`group relative bg-white rounded-[24px] p-4 border border-slate-100 shadow-sm flex items-center gap-4 transition-all ${canBuy ? 'hover:shadow-xl hover:border-indigo-100 cursor-pointer active:scale-[0.97]' : ''}`}
               >
                 <div className="w-16 h-16 bg-slate-50 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-50 relative overflow-hidden group-hover:bg-indigo-50 transition-colors">
-                  <span className="text-3xl">{CAT_EMOJI[item.cat] || '📦'}</span>
+                  <span className="text-3xl">{CAT_EMOJI[item.category] || '📦'}</span>
                   {item.hot && (
                     <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br-lg">🔥</div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[9px] font-black text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">{item.cat}</span>
+                  <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                    <span className="text-[9px] font-black text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full">{item.category}</span>
+                    {item.isNew && <span className="text-[9px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full">신규</span>}
                     {item.hot && <span className="text-[9px] font-black text-red-400 bg-red-50 px-2 py-0.5 rounded-full">인기</span>}
+                    {item.outsideOnly && <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">영외전용</span>}
+                    {item.dutyFree && <span className="text-[9px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">면세</span>}
                   </div>
                   <h3 className="text-sm font-black text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{item.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-bold mb-0.5 tracking-tight">{item.spec} · {item.company}</p>
+                  <p className="text-[10px] text-slate-400 font-bold mb-0.5 tracking-tight truncate">{item.spec} · {item.company}</p>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-lg font-black text-slate-900">{item.px.toLocaleString()}원</span>
+                    <span className="text-lg font-black text-slate-900">{item.price.toLocaleString()}원</span>
                     <span className="text-[9px] font-bold text-slate-300">PX가</span>
+                    {item.prevPrice && (
+                      <span className={`text-[10px] font-bold ${dropped ? 'text-blue-500' : 'text-slate-400'}`}>
+                        <s className="text-slate-300 mr-1">{item.prevPrice.toLocaleString()}</s>{dropped ? '▼' : '▲'}{Math.abs(item.prevPrice - item.price).toLocaleString()}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-[9px] text-orange-400 font-bold mt-0.5">품절 시 쿠팡에서 바로 구매 →</p>
+                  {canBuy && <p className="text-[9px] text-orange-400 font-bold mt-0.5">품절 시 쿠팡에서 바로 구매 →</p>}
                 </div>
 
                 <div className="flex flex-col items-center gap-2">
                   <button
                     onClick={(e) => toggleCart(e, item.id)}
+                    aria-label={cart[item.id] ? '쇼핑 리스트에서 빼기' : '쇼핑 리스트에 담기'}
                     className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
                       cart[item.id]
                       ? 'bg-red-500 text-white shadow-sm shadow-red-200'
@@ -312,12 +333,17 @@ export default function App() {
                   >
                     <Heart size={14} fill={cart[item.id] ? 'currentColor' : 'none'} />
                   </button>
-                  <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
-                    <ShoppingCart size={14} />
-                  </div>
+                  {canBuy && (
+                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
+                      <ShoppingCart size={14} />
+                    </div>
+                  )}
                 </div>
               </div>
-            ))
+              );
+            })}
+            {visibleCount < filteredItems.length && <div ref={sentinelRef} className="h-10" />}
+            </>
           ) : (
             <div className="text-center py-24">
               <div className="inline-flex w-16 h-16 bg-slate-50 rounded-full items-center justify-center text-slate-200 mb-4">
@@ -330,7 +356,7 @@ export default function App() {
 
         {/* Footer */}
         <footer className="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-xl border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-50">
-          <p className="text-[8px] text-slate-300 font-medium text-center leading-relaxed mb-2">
+          <p className="text-[10px] text-slate-500 font-bold text-center leading-relaxed mb-2">
             이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
           </p>
           <div className="flex items-center justify-center gap-2 text-slate-300 font-black text-[9px] tracking-[0.2em] uppercase">
@@ -358,12 +384,12 @@ export default function App() {
             </div>
             <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
               <p className="font-bold text-slate-800">
-                2026년 PX 신규상품을 한눈에 검색하고 최저가로 구매할 수 있는 스마트 카탈로그입니다.
+                PX 판매상품 전체를 한눈에 검색하고, 품절 시 쿠팡으로 바로 구매할 수 있는 스마트 카탈로그입니다.
               </p>
               <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-base">🛒</span>
-                  <span className="text-xs font-bold text-slate-700">총 {RAW_DATA.length}개 상품 · {new Set(RAW_DATA.map(i => i.cat)).size}개 카테고리</span>
+                  <span className="text-xs font-bold text-slate-700">총 {products.length.toLocaleString()}개 상품 · {categories.length - 1}개 카테고리{meta ? ` · ${meta.updatedAt} 업데이트` : ''}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">🔥</span>
@@ -371,7 +397,7 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">🔗</span>
-                  <span className="text-xs font-bold text-slate-700">PX 품절 시 상품 터치 → 쿠팡 로켓배송 구매</span>
+                  <span className="text-xs font-bold text-slate-700">PX 품절 시 상품 터치 → 쿠팡 로켓배송 구매 (주류·담배 제외)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">📍</span>
@@ -421,10 +447,10 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {cartItems.length > 0 ? cartItems.map(item => (
                 <div key={item.id} className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3">
-                  <span className="text-2xl flex-shrink-0">{CAT_EMOJI[item.cat] || '📦'}</span>
+                  <span className="text-2xl flex-shrink-0">{CAT_EMOJI[item.category] || '📦'}</span>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
-                    <p className="text-[10px] text-slate-400 font-bold">{item.px.toLocaleString()}원</p>
+                    <p className="text-[10px] text-slate-400 font-bold">{item.price.toLocaleString()}원</p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
