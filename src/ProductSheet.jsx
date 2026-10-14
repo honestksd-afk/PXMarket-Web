@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { X, Heart, MapPin, ExternalLink, TrendingDown, TrendingUp, Info } from 'lucide-react';
 import { CAT_EMOJI, coupangUrl } from './catalog.js';
 
-export const PARTNERS_NOTICE = '쿠팡 파트너스 활동으로 구매 시 일정액의 수수료를 받을 수 있어요. 구매 가격은 같아요.';
+// 쿠팡 파트너스 권장 고지 문구 그대로 사용
+export const PARTNERS_NOTICE = '이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
 
 /** 쿠팡 이동 버튼 + 바로 아래 파트너스 고지 (고지는 링크 가까이에 있어야 함) */
 export function CoupangCta({ url, label = '쿠팡에서 찾아보기', sub, compact = false }) {
@@ -33,7 +34,7 @@ export default function ProductSheet({ item, meta, inCart, onToggleCart, onClose
   }, [item.id, onClose]);
 
   const close = () => window.history.back(); // popstate → onClose
-  const url = coupangUrl(item);
+  const url = coupangUrl(item, 'detail');
   const diff = item.prevPrice ? item.price - item.prevPrice : 0;
 
   return (
@@ -114,7 +115,7 @@ export default function ProductSheet({ item, meta, inCart, onToggleCart, onClose
           {url ? (
             <div className="border-t border-slate-100 pt-5">
               <p className="text-sm font-black text-slate-800 mb-1">PX에 없거나 갈 시간이 없다면?</p>
-              <p className="text-xs text-slate-500 mb-3">품절이거나 부대·마트가 멀 때는 쿠팡에서 같은 상품을 찾아 집으로 받을 수 있어요.</p>
+              <p className="text-xs text-slate-500 mb-3">품절이거나 부대·마트가 멀 때는 쿠팡에서 찾아 집으로 받을 수 있어요. <b className="text-slate-700">쿠팡 가격은 PX가와 다를 수 있으니 쿠팡에서 확인하세요.</b></p>
               <CoupangCta url={url} />
             </div>
           ) : (

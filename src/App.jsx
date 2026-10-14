@@ -306,7 +306,7 @@ export default function App() {
           ) : filteredItems.length > 0 ? (
             <>
             {filteredItems.slice(0, visibleCount).map(item => {
-              const buyUrl = coupangUrl(item);
+              const buyUrl = coupangUrl(item, 'card');
               const dropped = item.prevPrice > item.price;
               return (
               <div
@@ -381,7 +381,7 @@ export default function App() {
               {search.trim() && (
                 <div className="mt-6 text-left bg-orange-50/60 rounded-2xl p-4">
                   <p className="text-sm font-black text-slate-800 mb-1">‘{search.trim()}’ 쿠팡에서 찾아볼까요?</p>
-                  <p className="text-xs text-slate-500 mb-3">PX에서 팔지 않는 상품은 쿠팡에서 바로 주문할 수 있어요.</p>
+                  <p className="text-xs text-slate-500 mb-3">PX에서 팔지 않는 상품은 쿠팡에서 주문할 수 있어요. 가격은 쿠팡에서 확인하세요.</p>
                   <CoupangCta url={coupangSearchUrl(search.trim())} label="쿠팡에서 검색하기" compact />
                 </div>
               )}
@@ -497,8 +497,8 @@ export default function App() {
                     <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
                     <p className="text-[10px] text-slate-400 font-bold">
                       {item.price.toLocaleString()}원
-                      {coupangUrl(item) && (
-                        <a href={coupangUrl(item)} target="_blank" rel="noopener sponsored" className="ml-2 text-orange-500 font-black">쿠팡에서 찾기 ›</a>
+                      {coupangUrl(item, 'list') && (
+                        <a href={coupangUrl(item, 'list')} target="_blank" rel="noopener sponsored" className="ml-2 text-orange-500 font-black">쿠팡에서 찾기 ›</a>
                       )}
                     </p>
                   </div>

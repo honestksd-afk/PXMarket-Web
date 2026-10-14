@@ -72,12 +72,34 @@ export function matches(item, query) {
   return item._search.includes(q);
 }
 
-export function coupangUrl(item) {
+// ── 쿠팡 파트너스 subId: 어느 버튼·어느 유입에서 수익이 났는지 파트너스 리포트에서 구분 ──
+// 버튼 위치: card(목록 카드) / detail(상세 시트) / list(쇼핑 리스트) / search(검색 결과 없음)
+// 유입: 사이트 주소에 ?ref=yt01 처럼 붙여 공유하면 "pxdetail_yt01" 형태로 기록됨
+const REF_KEY = 'px-ref';
+
+function currentRef() {
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get('ref');
+    const ref = (fromUrl || sessionStorage.getItem(REF_KEY) || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+    if (fromUrl && ref) sessionStorage.setItem(REF_KEY, ref);
+    return ref;
+  } catch {
+    return '';
+  }
+}
+
+export function subId(placement) {
+  const ref = currentRef();
+  return `px${placement}${ref ? `_${ref}` : ''}`;
+}
+
+export function coupangUrl(item, placement = 'card') {
   if (!('link' in item)) return null; // 주류·담배: 쿠팡 판매 불가
-  return item.link || coupangSearchUrl(item.name);
+  if (!item.link) return coupangSearchUrl(item.name, placement);
+  return `${item.link}${item.link.includes('?') ? '&' : '?'}subId=${subId(placement)}`;
 }
 
 /** 쿠팡 검색 링크. 서버(api/coupang.js)가 파트너스 딥링크를 만들어 이동시킴 */
-export function coupangSearchUrl(query) {
-  return `/api/coupang?q=${encodeURIComponent(query)}`;
+export function coupangSearchUrl(query, placement = 'search') {
+  return `/api/coupang?q=${encodeURIComponent(query)}&sub=${subId(placement)}`;
 }
