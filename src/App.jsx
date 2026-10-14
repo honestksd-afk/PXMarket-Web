@@ -5,6 +5,24 @@ import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, cou
 
 const PAGE_SIZE = 40;
 
+// 상품 사진 (없거나 못 불러오면 카테고리 이모지)
+function ProductThumb({ item, className, emojiClass }) {
+  const [failed, setFailed] = useState(false);
+  if (!item.image || failed) return <span className={emojiClass}>{CAT_EMOJI[item.category] || '📦'}</span>;
+  return (
+    <img
+      src={`/images/p/${item.id}.webp`}
+      alt={item.name}
+      loading="lazy"
+      decoding="async"
+      width={64}
+      height={64}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function App() {
   const [products, setProducts] = useState([]);
   const [meta, setMeta] = useState(null);
@@ -292,8 +310,8 @@ export default function App() {
                 onClick={() => handleItemClick(item)}
                 className={`group relative bg-white rounded-[24px] p-4 border border-slate-100 shadow-sm flex items-center gap-4 transition-all ${canBuy ? 'hover:shadow-xl hover:border-indigo-100 cursor-pointer active:scale-[0.97]' : ''}`}
               >
-                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-50 relative overflow-hidden group-hover:bg-indigo-50 transition-colors">
-                  <span className="text-3xl">{CAT_EMOJI[item.category] || '📦'}</span>
+                <div className="w-16 h-16 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-100 relative overflow-hidden">
+                  <ProductThumb item={item} className="w-full h-full object-contain" emojiClass="text-3xl" />
                   {item.hot && (
                     <div className="absolute top-0 left-0 bg-red-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded-br-lg">🔥</div>
                   )}
@@ -447,7 +465,9 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {cartItems.length > 0 ? cartItems.map(item => (
                 <div key={item.id} className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex items-center gap-3">
-                  <span className="text-2xl flex-shrink-0">{CAT_EMOJI[item.category] || '📦'}</span>
+                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl overflow-hidden bg-white border border-slate-100">
+                    <ProductThumb item={item} className="w-full h-full object-contain" emojiClass="text-2xl" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
                     <p className="text-[10px] text-slate-400 font-bold">{item.price.toLocaleString()}원</p>

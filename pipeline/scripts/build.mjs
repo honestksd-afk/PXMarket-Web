@@ -75,6 +75,7 @@ for (const r of rows) {
     ...(o.hot && { hot: true }),
     ...(history[id].prevPrice !== undefined && { prevPrice: history[id].prevPrice }),
     firstSeen: history[id].firstSeen,
+    ...(fs.existsSync(`../public/images/p/${id}.webp`) && { image: true }), // npm run images 로 받은 사진
     ...(!NO_COUPANG.has(category) || o.allowLink ? { link: o.link || null } : {}),
   });
 }

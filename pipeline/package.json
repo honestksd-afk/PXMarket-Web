@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "categories": "node scripts/apply-categories.mjs data/category-fixes.txt"
+    "categories": "node scripts/apply-categories.mjs data/category-fixes.txt",
+    "links": "node scripts/coupang-links.mjs",
+    "images": "node scripts/images.mjs"
   }
 }
