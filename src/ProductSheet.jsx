@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { X, Heart, MapPin, ExternalLink, TrendingDown, TrendingUp, Info } from 'lucide-react';
-import { CAT_EMOJI, coupangUrl } from './catalog.js';
+import { CAT_EMOJI, coupangUrl, drinkPairing } from './catalog.js';
 
 // 쿠팡 파트너스 권장 고지 문구 그대로 사용
 export const PARTNERS_NOTICE = '이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.';
@@ -35,6 +35,7 @@ export default function ProductSheet({ item, meta, inCart, onToggleCart, onClose
 
   const close = () => window.history.back(); // popstate → onClose
   const url = coupangUrl(item, 'detail');
+  const pairing = drinkPairing(item, 'drink');
   const diff = item.prevPrice ? item.price - item.prevPrice : 0;
 
   return (
@@ -118,9 +119,15 @@ export default function ProductSheet({ item, meta, inCart, onToggleCart, onClose
               <p className="text-xs text-slate-500 mb-3">품절이거나 부대·마트가 멀 때는 쿠팡에서 찾아 집으로 받을 수 있어요. <b className="text-slate-700">쿠팡 가격은 PX가와 다를 수 있으니 쿠팡에서 확인하세요.</b></p>
               <CoupangCta url={url} />
             </div>
+          ) : pairing ? (
+            <div className="border-t border-slate-100 pt-5">
+              <p className="text-sm font-black text-slate-800 mb-1">술은 PX에서, 안주는 미리 집으로</p>
+              <p className="text-xs text-slate-500 mb-3">주류는 온라인 판매가 안 돼서 PX 매장에서만 살 수 있어요. 같이 곁들일 안주나 잔은 쿠팡에서 미리 받아둘 수 있어요.</p>
+              <CoupangCta url={pairing.url} label={`쿠팡에서 ${pairing.query} 보기`} />
+            </div>
           ) : (
             <p className="text-xs text-slate-500 bg-slate-50 rounded-xl px-3 py-3 border-t border-slate-100">
-              {item.category === '담배' ? '담배' : '주류'}는 온라인 판매가 안 돼서 PX 매장에서만 살 수 있어요.
+              담배는 온라인 판매가 안 돼서 PX 매장에서만 살 수 있어요.
             </p>
           )}
         </div>

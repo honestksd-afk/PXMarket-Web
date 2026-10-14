@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Search, Zap, ArrowUpRight, Info, Tag, X, Flame, MapPin, Phone, Clock, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
 import { PX_STORES } from './stores.js';
-import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl } from './catalog.js';
+import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl, drinkPairing } from './catalog.js';
 import ProductSheet, { CoupangCta, PARTNERS_NOTICE } from './ProductSheet.jsx';
+import InstallBanner from './InstallBanner.jsx';
 
 const PAGE_SIZE = 40;
 
@@ -269,6 +270,8 @@ export default function App() {
 
         {/* Product List */}
         <main className="flex-1 px-6 py-4 space-y-4 pb-24">
+          <InstallBanner />
+
           {/* Store Finder Banner */}
           <button
             onClick={() => setShowStores(true)}
@@ -307,6 +310,7 @@ export default function App() {
             <>
             {filteredItems.slice(0, visibleCount).map(item => {
               const buyUrl = coupangUrl(item, 'card');
+              const pairing = drinkPairing(item, 'drinkcard');
               const dropped = item.prevPrice > item.price;
               return (
               <div
@@ -364,6 +368,18 @@ export default function App() {
                       className="h-8 px-2.5 rounded-full bg-orange-50 text-orange-500 text-[10px] font-black flex items-center hover:bg-orange-500 hover:text-white transition-all"
                     >
                       쿠팡
+                    </a>
+                  )}
+                  {pairing && (
+                    <a
+                      href={pairing.url}
+                      target="_blank"
+                      rel="noopener sponsored"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`쿠팡에서 ${pairing.query} 보기`}
+                      className="h-8 px-2.5 rounded-full bg-orange-50 text-orange-500 text-[10px] font-black flex items-center hover:bg-orange-500 hover:text-white transition-all"
+                    >
+                      안주
                     </a>
                   )}
                 </div>
@@ -450,6 +466,10 @@ export default function App() {
                   <span className="text-base">📱</span>
                   <span className="text-xs font-bold text-slate-700">홈 화면에 추가하면 앱처럼 사용 가능</span>
                 </div>
+                <a href="https://www.instagram.com/militaryfam_/" target="_blank" rel="noopener" className="flex items-center gap-2">
+                  <span className="text-base">📸</span>
+                  <span className="text-xs font-bold text-indigo-600">만든 사람: 군인가족TV @militaryfam_ · PX·복지 꿀정보</span>
+                </a>
               </div>
               <p className="text-[10px] text-slate-400 leading-relaxed">
                 본 서비스는 국군복지단 공식 서비스가 아니며, 상품 정보는 실제와 다를 수 있습니다.

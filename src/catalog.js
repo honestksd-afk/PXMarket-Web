@@ -1,4 +1,5 @@
 // 상품 데이터 로딩·검색 유틸 (데이터는 pipeline/에서 생성한 public/data/*.json)
+import DRINK_LINKS from '../pipeline/data/drink-pairing-links.json';
 
 export const CATEGORY_ORDER = [
   '식품·건강기능식품', '과자·간식', '유제품·음료', '아이스크림', '주류',
@@ -97,6 +98,26 @@ export function coupangUrl(item, placement = 'card') {
   if (!('link' in item)) return null; // 주류·담배: 쿠팡 판매 불가
   if (!item.link) return coupangSearchUrl(item.name, placement);
   return `${item.link}${item.link.includes('?') ? '&' : '?'}subId=${subId(placement)}`;
+}
+
+// ── 주류: 술은 온라인 판매가 안 되므로 쿠팡에서 살 수 있는 안주·잔을 안내 ──
+// 링크는 pipeline/data/drink-pairing-links.json (파트너스 딥링크로 미리 생성)
+const DRINK_KINDS = [
+  ['하이볼 잔', /하이볼|스카치하이/],
+  ['막걸리 안주', /막걸리|탁주/],
+  ['와인 안주', /와인|로제|까베르네|소비뇽|샤도네이|피노|그라나차|멜롯|쉬라즈|스파클링|샴페인/],
+  ['위스키 안주', /위스키|년|xo|vsop|꼬냑|코냑|브랜디|보드카|데킬라|진$|럼|싱글몰트|발렌타인|조니워커|윈저|로얄|샬루트|글렌|기원|와일드터키|호세쿠엘보/i],
+  ['사케 안주', /사케|준마이|쿠보다|기리시마|월계관|청주|약주|사화/],
+  ['소주 안주', /소주|참이슬|처음처럼|새로|진로|좋은데이|잎새주|화요|일품|원소주|청하|선양|매화수/],
+  ['맥주 안주', /맥주|라거|에일|ipa|필스|생맥|캔|카스|테라|켈리|아사히|하이네켄|코젤|칭따오|기네스|버드|에비스|삿포로/i],
+];
+
+export function drinkPairing(item, placement = 'drink') {
+  if (item.category !== '주류') return null;
+  const [query] = DRINK_KINDS.find(([, re]) => re.test(item.name)) || ['술 안주'];
+  const link = DRINK_LINKS[query];
+  if (!link) return null;
+  return { query, url: `${link}?subId=${subId(placement)}` };
 }
 
 /** 쿠팡 검색 링크. 서버(api/coupang.js)가 파트너스 딥링크를 만들어 이동시킴 */
