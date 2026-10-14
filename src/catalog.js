@@ -1,7 +1,5 @@
 // 상품 데이터 로딩·검색 유틸 (데이터는 pipeline/에서 생성한 public/data/*.json)
 
-export const PARTNERS_ID = "cmyTxY";
-
 export const CATEGORY_ORDER = [
   '식품·건강기능식품', '과자·간식', '유제품·음료', '아이스크림', '주류',
   '스킨케어', '선케어', '메이크업', '헤어케어', '향수·바디',
@@ -76,5 +74,10 @@ export function matches(item, query) {
 
 export function coupangUrl(item) {
   if (!('link' in item)) return null; // 주류·담배: 쿠팡 판매 불가
-  return item.link || `https://link.coupang.com/a/${PARTNERS_ID}?q=${encodeURIComponent(item.name)}`;
+  return item.link || coupangSearchUrl(item.name);
+}
+
+/** 쿠팡 검색 링크. 서버(api/coupang.js)가 파트너스 딥링크를 만들어 이동시킴 */
+export function coupangSearchUrl(query) {
+  return `/api/coupang?q=${encodeURIComponent(query)}`;
 }

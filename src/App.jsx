@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Search, Zap, ArrowUpRight, CreditCard, Info, Tag, X, Flame, MapPin, Phone, Clock, ShoppingCart, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
+import { Search, Zap, ArrowUpRight, Info, Tag, X, Flame, MapPin, Phone, Clock, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
 import { PX_STORES } from './stores.js';
-import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl } from './catalog.js';
+import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl } from './catalog.js';
+import ProductSheet, { CoupangCta, PARTNERS_NOTICE } from './ProductSheet.jsx';
 
 const PAGE_SIZE = 40;
 
@@ -38,6 +39,8 @@ export default function App() {
   const [sortBy, setSortBy] = useState('default');
   const [tab, setTab] = useState('all');
   const [showCart, setShowCart] = useState(false);
+  const [selected, setSelected] = useState(null); // 상세 시트에 열린 상품
+  const closeSheet = useCallback(() => setSelected(null), []);
 
   // 장바구니: { id: 수량 }
   const [cart, setCart] = useState(() => {
@@ -149,10 +152,11 @@ export default function App() {
     );
   }, [storeSearch]);
 
-  const handleItemClick = (item) => {
-    const url = coupangUrl(item);
-    if (url) window.open(url, '_blank', 'noopener');
-  };
+  // 상세 시트에서 "영외마트 찾기": 시트를 닫고(뒤로가기 기록 정리) 마트 목록 열기
+  const findStoreFromSheet = useCallback(() => {
+    window.history.back();
+    setShowStores(true);
+  }, []);
 
   const updatedLabel = meta ? `${Number(meta.updatedAt.slice(5, 7))}/${Number(meta.updatedAt.slice(8, 10))} 기준` : '';
 
@@ -264,7 +268,7 @@ export default function App() {
         </header>
 
         {/* Product List */}
-        <main className="flex-1 px-6 py-4 space-y-4 pb-48">
+        <main className="flex-1 px-6 py-4 space-y-4 pb-24">
           {/* Store Finder Banner */}
           <button
             onClick={() => setShowStores(true)}
@@ -302,13 +306,13 @@ export default function App() {
           ) : filteredItems.length > 0 ? (
             <>
             {filteredItems.slice(0, visibleCount).map(item => {
-              const canBuy = 'link' in item;
+              const buyUrl = coupangUrl(item);
               const dropped = item.prevPrice > item.price;
               return (
               <div
                 key={item.id}
-                onClick={() => handleItemClick(item)}
-                className={`group relative bg-white rounded-[24px] p-4 border border-slate-100 shadow-sm flex items-center gap-4 transition-all ${canBuy ? 'hover:shadow-xl hover:border-indigo-100 cursor-pointer active:scale-[0.97]' : ''}`}
+                onClick={() => setSelected(item)}
+                className="group relative bg-white rounded-[24px] p-4 border border-slate-100 shadow-sm flex items-center gap-4 transition-all hover:shadow-xl hover:border-indigo-100 cursor-pointer active:scale-[0.98]"
               >
                 <div className="w-16 h-16 bg-white rounded-2xl flex-shrink-0 flex items-center justify-center border border-slate-100 relative overflow-hidden">
                   <ProductThumb item={item} className="w-full h-full object-contain" emojiClass="text-3xl" />
@@ -336,7 +340,6 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                  {canBuy && <p className="text-[9px] text-orange-400 font-bold mt-0.5">품절 시 쿠팡에서 바로 구매 →</p>}
                 </div>
 
                 <div className="flex flex-col items-center gap-2">
@@ -351,10 +354,17 @@ export default function App() {
                   >
                     <Heart size={14} fill={cart[item.id] ? 'currentColor' : 'none'} />
                   </button>
-                  {canBuy && (
-                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all">
-                      <ShoppingCart size={14} />
-                    </div>
+                  {buyUrl && (
+                    <a
+                      href={buyUrl}
+                      target="_blank"
+                      rel="noopener sponsored"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`${item.name} 쿠팡에서 찾기`}
+                      className="h-8 px-2.5 rounded-full bg-orange-50 text-orange-500 text-[10px] font-black flex items-center hover:bg-orange-500 hover:text-white transition-all"
+                    >
+                      쿠팡
+                    </a>
                   )}
                 </div>
               </div>
@@ -367,21 +377,36 @@ export default function App() {
               <div className="inline-flex w-16 h-16 bg-slate-50 rounded-full items-center justify-center text-slate-200 mb-4">
                 <Search size={32} />
               </div>
-              <p className="text-slate-400 font-bold text-sm">검색 결과가 없습니다.</p>
+              <p className="text-slate-400 font-bold text-sm">PX 상품 중에는 검색 결과가 없어요.</p>
+              {search.trim() && (
+                <div className="mt-6 text-left bg-orange-50/60 rounded-2xl p-4">
+                  <p className="text-sm font-black text-slate-800 mb-1">‘{search.trim()}’ 쿠팡에서 찾아볼까요?</p>
+                  <p className="text-xs text-slate-500 mb-3">PX에서 팔지 않는 상품은 쿠팡에서 바로 주문할 수 있어요.</p>
+                  <CoupangCta url={coupangSearchUrl(search.trim())} label="쿠팡에서 검색하기" compact />
+                </div>
+              )}
             </div>
           )}
         </main>
 
-        {/* Footer */}
-        <footer className="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-xl border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.03)] z-50">
-          <p className="text-[10px] text-slate-500 font-bold text-center leading-relaxed mb-2">
-            이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다.
+        {/* Footer: 파트너스 고지 */}
+        <footer className="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-xl border-t border-slate-100 px-6 py-3 z-50">
+          <p className="text-[10px] text-slate-500 font-bold text-center leading-relaxed">
+            {PARTNERS_NOTICE}
           </p>
-          <div className="flex items-center justify-center gap-2 text-slate-300 font-black text-[9px] tracking-[0.2em] uppercase">
-            <CreditCard size={12} /> Secure Payment Verification
-          </div>
         </footer>
       </div>
+
+      {selected && (
+        <ProductSheet
+          item={selected}
+          meta={meta}
+          inCart={!!cart[selected.id]}
+          onToggleCart={(e) => toggleCart(e, selected.id)}
+          onClose={closeSheet}
+          onFindStore={findStoreFromSheet}
+        />
+      )}
 
       {/* Info Modal */}
       {showInfo && (
@@ -470,7 +495,12 @@ export default function App() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
-                    <p className="text-[10px] text-slate-400 font-bold">{item.price.toLocaleString()}원</p>
+                    <p className="text-[10px] text-slate-400 font-bold">
+                      {item.price.toLocaleString()}원
+                      {coupangUrl(item) && (
+                        <a href={coupangUrl(item)} target="_blank" rel="noopener sponsored" className="ml-2 text-orange-500 font-black">쿠팡에서 찾기 ›</a>
+                      )}
+                    </p>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors">
@@ -499,7 +529,8 @@ export default function App() {
                   <span className="text-sm font-bold text-slate-500">예상 합계</span>
                   <span className="text-xl font-black text-slate-900">{cartTotal.toLocaleString()}원</span>
                 </div>
-                <p className="text-[9px] text-slate-400 font-medium text-center">실제 가격은 PX 매장에서 확인하세요</p>
+                <p className="text-[10px] text-slate-400 font-medium text-center">실제 가격은 PX 매장에서 확인하세요 · PX 방문이 어려우면 상품별 ‘쿠팡에서 찾기’로 주문할 수 있어요</p>
+                <p className="text-[9px] text-slate-400 text-center mt-1">{PARTNERS_NOTICE}</p>
               </div>
             )}
           </div>
