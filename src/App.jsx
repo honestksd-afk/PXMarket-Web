@@ -1,11 +1,14 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Search, Zap, ArrowUpRight, Info, Tag, X, Flame, MapPin, Phone, Clock, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
 import { PX_STORES } from './stores.js';
-import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl, drinkPairing } from './catalog.js';
+import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, loadDeals, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl, drinkPairing, readUrlState } from './catalog.js';
 import ProductSheet, { CoupangCta, PARTNERS_NOTICE } from './ProductSheet.jsx';
 import InstallBanner from './InstallBanner.jsx';
+import DealsStrip from './DealsStrip.jsx';
 
 const PAGE_SIZE = 40;
+// 바로가기 주소(?view=new|hot|drop|stores, ?q=검색어)로 들어왔을 때의 시작 상태
+const URL_STATE = readUrlState();
 
 // 상품 사진 (없거나 못 불러오면 카테고리 이모지)
 function ProductThumb({ item, className, emojiClass }) {
@@ -32,14 +35,15 @@ export default function App() {
   // 몇 개까지 그렸는지. 필터 조합(key)이 바뀌면 처음 PAGE_SIZE개부터 다시 그림
   const [visible, setVisible] = useState({ key: '', count: PAGE_SIZE });
   const sentinelRef = useRef(null);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(URL_STATE.q);
   const [selectedCat, setSelectedCat] = useState('전체');
   const [showInfo, setShowInfo] = useState(false);
-  const [showStores, setShowStores] = useState(false);
+  const [showStores, setShowStores] = useState(URL_STATE.stores);
   const [storeSearch, setStoreSearch] = useState('');
   const [sortBy, setSortBy] = useState('default');
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState(URL_STATE.tab);
   const [showCart, setShowCart] = useState(false);
+  const [deals, setDeals] = useState(null); // '쿠팡이 더 싼 대용량' (없으면 띠 숨김)
   const [selected, setSelected] = useState(null); // 상세 시트에 열린 상품
   const closeSheet = useCallback(() => setSelected(null), []);
 
@@ -56,8 +60,13 @@ export default function App() {
 
   useEffect(() => {
     loadCatalog()
-      .then(({ products, meta }) => { setProducts(products); setMeta(meta); })
+      .then(({ products, meta }) => {
+        setProducts(products); setMeta(meta);
+        // ?view=drop 으로 들어왔는데 이번 달 가격 인하가 없으면 전체로
+        if (URL_STATE.tab === 'drop' && !products.some(p => p.prevPrice > p.price)) setTab('all');
+      })
       .catch(() => setLoadError(true));
+    loadDeals().then(setDeals);
     // 구버전 쇼핑 리스트(숫자 id) → p_code
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem('px-cart') || '{}'); } catch { /* 무시 */ }
@@ -286,6 +295,9 @@ export default function App() {
             </div>
             <ArrowUpRight size={18} className="text-white/60 flex-shrink-0" />
           </button>
+
+          {/* 쿠팡이 더 싼 대용량: 첫 화면(전체·검색 없음)에서만 */}
+          {tab === 'all' && selectedCat === '전체' && !search.trim() && <DealsStrip deals={deals} />}
 
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xs font-black text-slate-400 tracking-widest flex items-center gap-2">

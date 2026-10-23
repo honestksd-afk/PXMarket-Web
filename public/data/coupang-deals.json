@@ -1,0 +1,32 @@
+{
+ "checkedAt": "2026-10-23",
+ "subId": "pxdeal",
+ "items": [
+  {
+   "id": "3002",
+   "name": "햇반",
+   "spec": "210G",
+   "image": true,
+   "basis": "100g",
+   "px": {
+    "price": 1130,
+    "total": 210,
+    "unit": "g",
+    "unitPrice": 538
+   },
+   "coupang": {
+    "name": "햇반 백미밥, 210g, 37개",
+    "price": 37800,
+    "total": 7770,
+    "unitPrice": 486,
+    "productId": 9509930958,
+    "productUrl": "https://www.coupang.com/vp/products/9509930958?itemId=8747704240&vendorItemId=95786365521",
+    "affiliateUrl": "https://link.coupang.com/re/AFFSDP?lptag=AF1014839&subid=pxdeal&pageKey=9509930958&itemId=8747704240&vendorItemId=95786365521&traceid=V0-153-8c083752b54f2e4d&clickBeacon=ce3d20e0-ceae-11f1-affb-c8f881446eb5%7E3&requestid=20261023155600467012701332&token=31850C%7CMIXED&pt=1&slot=1",
+    "image": "https://ads-partners.coupang.com/image1/Db9O8C5deIo5EVJwDR1RLmKsEOq_RWpSo8ou82S7lnQstBbIZSL3s3uZcR7-tyFqLFuJFY0RPBb5Y0DktYuOCtssYvnO9Xd_ARbjwGknx6XsUptEW7fvsty9Y4i4_v6vSDCaZvPzXcHRPrkBETxLUPcpB8Vq8QTeB9xAKNrgGzYHwetEG55y7PK6-xXltNeEefvvAk1w0oJyGWJIp9YCVBlk_4OFjxj7nNgQVHn4bXGmaFPKQZ3POUzHUeYPk6S471tR2uocRnQ4j73AawPEWUmUF0HHZWkxFv2dgviTCx9Z_NiUHnppWlyAlFrC2UeCm1FyxJE7rt7_AS6PWFVvEGH1l4LAq8kPGGrgZJc0gb4Zl1CPYu1NJnMqTdHqHBrJYQcJ73Dz5kv51cDkTJ87j1Y_PMbuyCy2JkRsXfhbWFSJGMrfz8ncgST4BgjU3uOFxJGX4g5Cm_NJJfoH7KOYcjGupOWC2_0DzxLzDFn9Fx6qj6RKct0M6q6RZD9Fhn3DzDjTtUXA3SphUQ0fPqEWJxkCk5sO9Poi7Eg61S4t",
+    "rocket": false
+   },
+   "savePct": 10,
+   "checkedAt": "2026-10-23"
+  }
+ ]
+}

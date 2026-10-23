@@ -94,10 +94,53 @@ export function subId(placement) {
   return `px${placement}${ref ? `_${ref}` : ''}`;
 }
 
+// 쿠팡 단축 링크(link.coupang.com/a/xxx) 뒤에 ?subId= 를 붙이면 쿠팡이 버려서 측정이 안 됐음.
+// 그래서 모든 쿠팡 이동은 /api/coupang 을 거쳐 클릭 시점에 subId가 박힌 딥링크를 만든다.
+// 미리 만들어 둔 단축 링크는 API 실패 시 대체 링크(f)로만 쓴다.
+const shortCode = link => (String(link || '').match(/link\.coupang\.com\/a\/([A-Za-z0-9]+)/) || [])[1] || '';
+
+function apiLink(params) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v) sp.set(k, v);
+  return `/api/coupang?${sp}`;
+}
+
 export function coupangUrl(item, placement = 'card') {
   if (!('link' in item)) return null; // 주류·담배: 쿠팡 판매 불가
-  if (!item.link) return coupangSearchUrl(item.name, placement);
-  return `${item.link}${item.link.includes('?') ? '&' : '?'}subId=${subId(placement)}`;
+  return apiLink({ q: item.name, sub: subId(placement), f: shortCode(item.link) });
+}
+
+// ── '쿠팡이 더 싼 대용량' (public/data/coupang-deals.json, pipeline `npm run deals` 로 생성) ──
+export async function loadDeals() {
+  try {
+    const r = await fetch('/data/coupang-deals.json');
+    if (!r.ok) return null;
+    const d = await r.json();
+    return Array.isArray(d?.items) && d.items.length ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 대용량 비교 상품의 쿠팡 링크. 상품 페이지 주소로 딥링크를 만들고, 실패하면 검색 API가 준 제휴 링크로 */
+export function dealUrl(deal, placement = 'deal') {
+  const c = deal.coupang;
+  return apiLink({ u: c.productUrl, sub: subId(placement), f: c.affiliateUrl });
+}
+
+// ── 바로가기 주소: ?view=new|hot|drop|stores · ?q=검색어 (릴스 캡션·litt.ly 링크용) ──
+export function readUrlState() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const view = (sp.get('view') || '').toLowerCase();
+    return {
+      tab: ['new', 'hot', 'drop'].includes(view) ? view : 'all',
+      stores: view === 'stores',
+      q: (sp.get('q') || '').trim().slice(0, 40),
+    };
+  } catch {
+    return { tab: 'all', stores: false, q: '' };
+  }
 }
 
 // ── 주류: 술은 온라인 판매가 안 되므로 쿠팡에서 살 수 있는 안주·잔을 안내 ──
@@ -117,10 +160,10 @@ export function drinkPairing(item, placement = 'drink') {
   const [query] = DRINK_KINDS.find(([, re]) => re.test(item.name)) || ['술 안주'];
   const link = DRINK_LINKS[query];
   if (!link) return null;
-  return { query, url: `${link}?subId=${subId(placement)}` };
+  return { query, url: apiLink({ q: query, sub: subId(placement), f: shortCode(link) }) };
 }
 
 /** 쿠팡 검색 링크. 서버(api/coupang.js)가 파트너스 딥링크를 만들어 이동시킴 */
 export function coupangSearchUrl(query, placement = 'search') {
-  return `/api/coupang?q=${encodeURIComponent(query)}&sub=${subId(placement)}`;
+  return apiLink({ q: query, sub: subId(placement) });
 }
