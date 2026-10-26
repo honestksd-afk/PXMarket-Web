@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Search, Zap, ArrowUpRight, Info, Tag, X, Flame, MapPin, Phone, Clock, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown } from 'lucide-react';
+import { Search, Zap, ArrowUpRight, Info, Tag, X, Flame, MapPin, Phone, Clock, ClipboardList, Heart, Trash2, Minus, Plus, Sparkles, TrendingDown, ChevronRight } from 'lucide-react';
 import { PX_STORES } from './stores.js';
 import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, loadDeals, migrateLegacyCart, matches, coupangUrl, coupangSearchUrl, drinkPairing, readUrlState } from './catalog.js';
 import ProductSheet, { CoupangCta, PARTNERS_NOTICE } from './ProductSheet.jsx';
@@ -356,6 +356,20 @@ export default function App() {
                       </span>
                     )}
                   </div>
+                  {/* 10/27 쿠팡 동선 복구(A안): 카드에서 한 번에 쿠팡으로. 카드 본문 탭은 상세 시트 유지 */}
+                  {(buyUrl || pairing) && (
+                    <a
+                      href={buyUrl || pairing.url}
+                      target="_blank"
+                      rel="noopener sponsored"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={buyUrl ? `${item.name} 쿠팡에서 보기` : `쿠팡에서 ${pairing.query} 보기`}
+                      className="mt-2 inline-flex items-center gap-0.5 h-7 px-3 rounded-full bg-orange-500 text-white text-[11px] font-black shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
+                    >
+                      {buyUrl ? '쿠팡에서 보기' : `쿠팡 관련 상품 · ${pairing.query}`}
+                      <ChevronRight size={12} strokeWidth={3} />
+                    </a>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-center gap-2">
@@ -370,30 +384,6 @@ export default function App() {
                   >
                     <Heart size={14} fill={cart[item.id] ? 'currentColor' : 'none'} />
                   </button>
-                  {buyUrl && (
-                    <a
-                      href={buyUrl}
-                      target="_blank"
-                      rel="noopener sponsored"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`${item.name} 쿠팡에서 찾기`}
-                      className="h-8 px-2.5 rounded-full bg-orange-50 text-orange-500 text-[10px] font-black flex items-center hover:bg-orange-500 hover:text-white transition-all"
-                    >
-                      쿠팡
-                    </a>
-                  )}
-                  {pairing && (
-                    <a
-                      href={pairing.url}
-                      target="_blank"
-                      rel="noopener sponsored"
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`쿠팡에서 ${pairing.query} 보기`}
-                      className="h-8 px-2.5 rounded-full bg-orange-50 text-orange-500 text-[10px] font-black flex items-center hover:bg-orange-500 hover:text-white transition-all"
-                    >
-                      안주
-                    </a>
-                  )}
                 </div>
               </div>
               );
