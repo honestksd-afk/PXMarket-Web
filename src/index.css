@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* 채널 브랜딩(10/31): 기존 indigo 계열 클래스를 올리브 팔레트로 통일 */
+@theme {
+  --color-indigo-50: #F5F2E6;
+  --color-indigo-100: #E9E3C8;
+  --color-indigo-200: #D8CFA0;
+  --color-indigo-300: #B4B88A;
+  --color-indigo-400: #5C6E41;
+  --color-indigo-500: #4E6038;
+  --color-indigo-600: #34452A;
+  --color-indigo-700: #2B3A22;
+  --color-indigo-800: #222E1B;
+}
+
+
 @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;700;900&display=swap');
 
 * {

@@ -171,7 +171,7 @@ export default function App() {
   const updatedLabel = meta ? `${Number(meta.updatedAt.slice(5, 7))}/${Number(meta.updatedAt.slice(8, 10))} 기준` : '';
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex justify-center font-sans text-slate-900">
+    <div className="min-h-screen bg-[#F3EEDC] flex justify-center font-sans text-slate-900">
       <div className="w-full max-w-md bg-white min-h-screen shadow-2xl flex flex-col relative overflow-x-hidden border-x border-slate-100">
 
         {/* Sticky Header */}
