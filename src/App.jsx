@@ -183,7 +183,7 @@ export default function App() {
                   <Zap size={22} fill="currentColor" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase leading-none">PX MARKET</h1>
+                  <h1 className="text-xl font-black tracking-tight text-[#34452A] uppercase leading-none">PX MARKET</h1>
                   <span className="text-[10px] font-bold text-indigo-500 tracking-widest">PRO 2026</span>
                 </div>
               </div>
@@ -278,7 +278,7 @@ export default function App() {
         </header>
 
         {/* Product List */}
-        <main className="flex-1 px-6 py-4 space-y-4 pb-24">
+        <main className="flex-1 px-6 py-4 space-y-4 pb-32">
           <InstallBanner />
 
           {/* Store Finder Banner */}
@@ -409,6 +409,11 @@ export default function App() {
 
         {/* Footer: 파트너스 고지 */}
         <footer className="fixed bottom-0 w-full max-w-md bg-white/90 backdrop-blur-xl border-t border-slate-100 px-6 py-3 z-50">
+          <div className="flex justify-center gap-1.5 mb-1.5">
+            {[['블로그','https://blog.naver.com/military_fam'],['유튜브','https://www.youtube.com/@military_fam'],['인스타','https://www.instagram.com/militaryfam_'],['링크 모음','https://litt.ly/militaryfam']].map(([t,u]) => (
+              <a key={t} href={u} target="_blank" rel="noopener" className="text-[10px] font-black text-[#34452A] bg-[#F3EEDC] rounded-full px-2.5 py-1">{t}</a>
+            ))}
+          </div>
           <p className="text-[10px] text-slate-500 font-bold text-center leading-relaxed">
             {PARTNERS_NOTICE}
           </p>

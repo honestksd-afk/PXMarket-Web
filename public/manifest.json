@@ -4,8 +4,8 @@
   "description": "PX 전체상품 가격 카탈로그",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F8FAFC",
-  "theme_color": "#4f46e5",
+  "background_color": "#F3EEDC",
+  "theme_color": "#34452A",
   "orientation": "portrait",
   "icons": [
     {
