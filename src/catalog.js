@@ -74,8 +74,16 @@ export function matches(item, query) {
 }
 
 // ── 쿠팡 파트너스 subId: 어느 버튼·어느 유입에서 수익이 났는지 파트너스 리포트에서 구분 ──
-// 버튼 위치: card(목록 카드) / detail(상세 시트) / list(쇼핑 리스트) / search(검색 결과 없음)
-// 유입: 사이트 주소에 ?ref=yt01 처럼 붙여 공유하면 "pxdetail_yt01" 형태로 기록됨
+// 쿠팡에 등록한 채널 이름과 정확히 같아야 한다(등록 안 된 이름은 '기본값'으로 합쳐짐). 꼬리(_ref)는 붙이지 않는다.
+// 위치: pxcardbtn(목록 카드) / pxdetail(상세 시트) / pxcollect(상황별 모음) / pxcartlist(쇼핑 리스트) / pxsearch(검색)
+// 유입: ?ref=littly…(littly 로 시작) → pxlittly, ?ref=yt…(yt1023px·ytpin1028 등)·shorts → pxshorts 가 위치보다 우선. 그 밖의 ref 는 무시
+const PLACEMENT_ALIAS = { card: 'cardbtn', drinkcard: 'cardbtn', drink: 'detail', set: 'collect', cart: 'cartlist', list: 'cartlist' };
+
+function refChannel(ref) {
+  if (ref.startsWith('littly')) return 'littly';
+  if (ref.startsWith('yt') || ref.startsWith('shorts')) return 'shorts';
+  return '';
+}
 const REF_KEY = 'px-ref';
 
 function currentRef() {
@@ -90,8 +98,8 @@ function currentRef() {
 }
 
 export function subId(placement) {
-  const ref = currentRef();
-  return `px${placement}${ref ? `_${ref}` : ''}`;
+  const channel = refChannel(currentRef());
+  return `px${channel || PLACEMENT_ALIAS[placement] || placement}`;
 }
 
 // 쿠팡 단축 링크(link.coupang.com/a/xxx) 뒤에 ?subId= 를 붙이면 쿠팡이 버려서 측정이 안 됐음.
@@ -128,7 +136,7 @@ export function dealUrl(deal, placement = 'deal') {
   return apiLink({ u: c.productUrl, sub: subId(placement), f: c.affiliateUrl });
 }
 
-// ── 바로가기 주소: ?view=new|hot|drop|stores · ?q=검색어 (릴스 캡션·litt.ly 링크용) ──
+// ── 바로가기 주소: ?view=new|hot|drop|stores|<모음 key> · ?q=검색어 (릴스 캡션·litt.ly 링크용) ──
 export function readUrlState() {
   try {
     const sp = new URLSearchParams(window.location.search);
@@ -136,10 +144,11 @@ export function readUrlState() {
     return {
       tab: ['new', 'hot', 'drop'].includes(view) ? view : 'all',
       stores: view === 'stores',
+      set: view,
       q: (sp.get('q') || '').trim().slice(0, 40),
     };
   } catch {
-    return { tab: 'all', stores: false, q: '' };
+    return { tab: 'all', stores: false, set: '', q: '' };
   }
 }
 

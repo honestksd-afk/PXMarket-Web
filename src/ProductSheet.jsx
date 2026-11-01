@@ -115,9 +115,9 @@ export default function ProductSheet({ item, meta, inCart, onToggleCart, onClose
           {/* 쿠팡 */}
           {url ? (
             <div className="border-t border-slate-100 pt-5">
-              <p className="text-sm font-black text-slate-800 mb-1">PX에 없거나 갈 시간이 없다면?</p>
-              <p className="text-xs text-slate-500 mb-3">품절이거나 부대·마트가 멀 때는 쿠팡에서 찾아 집으로 받을 수 있어요. <b className="text-slate-700">쿠팡 가격은 PX가와 다를 수 있으니 쿠팡에서 확인하세요.</b></p>
-              <CoupangCta url={url} />
+              <p className="text-sm font-black text-slate-800 mb-1">쿠팡 가격도 같이 보기</p>
+              <p className="text-xs text-slate-500 mb-3">다른 용량·묶음 상품을 비교하고, 부대·마트에 가지 않아도 집으로 받을 수 있어요. <b className="text-slate-700">쿠팡 가격은 PX가와 다를 수 있으니 쿠팡에서 확인하세요.</b></p>
+              <CoupangCta url={url} label="쿠팡 가격 보기 · 집으로 받기" />
             </div>
           ) : pairing ? (
             <div className="border-t border-slate-100 pt-5">

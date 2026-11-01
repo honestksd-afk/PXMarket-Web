@@ -5,9 +5,11 @@ import { CAT_EMOJI, CATEGORY_ORDER, loadCatalog, loadDeals, migrateLegacyCart, m
 import ProductSheet, { CoupangCta, PARTNERS_NOTICE } from './ProductSheet.jsx';
 import InstallBanner from './InstallBanner.jsx';
 import DealsStrip from './DealsStrip.jsx';
+import { CollectionsStrip, CollectionSheet } from './Collections.jsx';
+import { COLLECTION_BY_KEY } from './collections.js';
 
 const PAGE_SIZE = 40;
-// 바로가기 주소(?view=new|hot|drop|stores, ?q=검색어)로 들어왔을 때의 시작 상태
+// 바로가기 주소(?view=new|hot|drop|stores|winter|move|baby|discharge|gift, ?q=검색어)로 들어왔을 때의 시작 상태
 const URL_STATE = readUrlState();
 
 // 상품 사진 (없거나 못 불러오면 카테고리 이모지)
@@ -46,6 +48,9 @@ export default function App() {
   const [deals, setDeals] = useState(null); // '쿠팡이 더 싼 대용량' (없으면 띠 숨김)
   const [selected, setSelected] = useState(null); // 상세 시트에 열린 상품
   const closeSheet = useCallback(() => setSelected(null), []);
+  const [openSet, setOpenSet] = useState(COLLECTION_BY_KEY[URL_STATE.set] ? URL_STATE.set : null); // 상황별 모음 시트
+  const closeSet = useCallback(() => setOpenSet(null), []);
+  const [showCartCoupang, setShowCartCoupang] = useState(false); // 장바구니 '쿠팡에서 한 번에 받기' 목록 펼침
 
   // 장바구니: { id: 수량 }
   const [cart, setCart] = useState(() => {
@@ -109,6 +114,12 @@ export default function App() {
   const cartCount = useMemo(() => {
     return cartItems.reduce((sum, item) => sum + (cart[item.id] || 0), 0);
   }, [cartItems, cart]);
+
+  // 쇼핑 리스트 중 쿠팡에서 살 수 있는 것(주류·담배 제외)
+  const cartCoupang = useMemo(() => cartItems
+    .map(item => ({ item, url: coupangUrl(item, 'cart') }))
+    .filter(x => x.url), [cartItems]);
+  const cartOffline = cartItems.length - cartCoupang.length;
 
   const categories = useMemo(() => {
     const present = new Set(products.map(p => p.category));
@@ -213,7 +224,7 @@ export default function App() {
             </div>
 
             <p className="text-[11px] text-slate-400 font-medium mb-4 whitespace-nowrap overflow-hidden text-ellipsis">
-              PX 전체상품 {products.length ? products.length.toLocaleString() : '…'}개 · {updatedLabel} · 품절 시 <span className="text-orange-500 font-black">쿠팡 바로 구매</span> 🚀
+              PX 전체상품 {products.length ? products.length.toLocaleString() : '…'}개 · {updatedLabel} · <span className="text-orange-500 font-black">쿠팡 가격·집 배송</span>도 한 번에
             </p>
 
             {/* Search Input */}
@@ -297,6 +308,7 @@ export default function App() {
           </button>
 
           {/* 쿠팡이 더 싼 대용량: 첫 화면(전체·검색 없음)에서만 */}
+          {tab === 'all' && selectedCat === '전체' && !search.trim() && <CollectionsStrip onOpen={setOpenSet} />}
           {tab === 'all' && selectedCat === '전체' && !search.trim() && <DealsStrip deals={deals} />}
 
           <div className="flex items-center justify-between px-1">
@@ -356,19 +368,22 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                  {/* 10/27 쿠팡 동선 복구(A안): 카드에서 한 번에 쿠팡으로. 카드 본문 탭은 상세 시트 유지 */}
+                  {/* 11/1 모든 카드에 상시 쿠팡 버튼(품절 대안 → 가격 비교·집 배송). 카드 본문 탭은 상세 시트 유지 */}
                   {(buyUrl || pairing) && (
+                    <div className="mt-2">
                     <a
                       href={buyUrl || pairing.url}
                       target="_blank"
                       rel="noopener sponsored"
                       onClick={(e) => e.stopPropagation()}
                       aria-label={buyUrl ? `${item.name} 쿠팡에서 보기` : `쿠팡에서 ${pairing.query} 보기`}
-                      className="mt-2 inline-flex items-center gap-0.5 h-7 px-3 rounded-full bg-orange-500 text-white text-[11px] font-black shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
+                      className="inline-flex items-center gap-0.5 h-7 px-3 whitespace-nowrap rounded-full bg-orange-500 text-white text-[11px] font-black shadow-sm shadow-orange-200 hover:bg-orange-600 active:scale-95 transition-all"
                     >
-                      {buyUrl ? '쿠팡에서 보기' : `쿠팡 관련 상품 · ${pairing.query}`}
+                      {buyUrl ? '쿠팡 가격도 보기 · 집으로 받기' : `쿠팡 관련 상품 · ${pairing.query}`}
                       <ChevronRight size={12} strokeWidth={3} />
                     </a>
+                    <p className="text-[9px] text-slate-400 mt-1">쿠팡 파트너스 활동으로 수수료를 받아요</p>
+                    </div>
                   )}
                 </div>
 
@@ -389,6 +404,14 @@ export default function App() {
               );
             })}
             {visibleCount < filteredItems.length && <div ref={sentinelRef} className="h-10" />}
+            {/* 11/1 검색 결과가 있어도 맨 아래 쿠팡 검색 상시 */}
+            {search.trim() && (
+              <div className="bg-orange-50/60 rounded-2xl p-4">
+                <p className="text-sm font-black text-slate-800 mb-1">‘{search.trim()}’ 쿠팡에서도 찾기</p>
+                <p className="text-xs text-slate-500 mb-3">다른 용량·묶음 상품과 쿠팡 가격을 함께 볼 수 있어요. 가격은 쿠팡에서 확인하세요.</p>
+                <CoupangCta url={coupangSearchUrl(search.trim())} label="쿠팡에서도 찾기" compact />
+              </div>
+            )}
             </>
           ) : (
             <div className="text-center py-24">
@@ -431,6 +454,10 @@ export default function App() {
         />
       )}
 
+      {openSet && COLLECTION_BY_KEY[openSet] && (
+        <CollectionSheet collection={COLLECTION_BY_KEY[openSet]} onClose={closeSet} />
+      )}
+
       {/* Info Modal */}
       {showInfo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-6" onClick={() => setShowInfo(false)}>
@@ -450,7 +477,7 @@ export default function App() {
             </div>
             <div className="space-y-4 text-sm text-slate-600 leading-relaxed">
               <p className="font-bold text-slate-800">
-                PX 판매상품 전체를 한눈에 검색하고, 품절 시 쿠팡으로 바로 구매할 수 있는 스마트 카탈로그입니다.
+                PX 판매상품 전체를 한눈에 검색하고, 쿠팡 가격도 함께 보고 집으로 받을 수 있는 스마트 카탈로그입니다.
               </p>
               <div className="bg-slate-50 rounded-2xl p-4 space-y-2">
                 <div className="flex items-center gap-2">
@@ -463,7 +490,7 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">🔗</span>
-                  <span className="text-xs font-bold text-slate-700">PX 품절 시 상품 터치 → 쿠팡 로켓배송 구매 (주류·담배 제외)</span>
+                  <span className="text-xs font-bold text-slate-700">상품마다 쿠팡 가격 보기·집으로 받기 (주류·담배 제외)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-base">📍</span>
@@ -524,8 +551,8 @@ export default function App() {
                     <h3 className="text-[13px] font-black text-slate-800 truncate">{item.name}</h3>
                     <p className="text-[10px] text-slate-400 font-bold">
                       {item.price.toLocaleString()}원
-                      {coupangUrl(item, 'list') && (
-                        <a href={coupangUrl(item, 'list')} target="_blank" rel="noopener sponsored" className="ml-2 text-orange-500 font-black">쿠팡에서 찾기 ›</a>
+                      {coupangUrl(item, 'cart') && (
+                        <a href={coupangUrl(item, 'cart')} target="_blank" rel="noopener sponsored" className="ml-2 text-orange-500 font-black">쿠팡에서 찾기 ›</a>
                       )}
                     </p>
                   </div>
@@ -556,8 +583,31 @@ export default function App() {
                   <span className="text-sm font-bold text-slate-500">예상 합계</span>
                   <span className="text-xl font-black text-slate-900">{cartTotal.toLocaleString()}원</span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium text-center">실제 가격은 PX 매장에서 확인하세요 · PX 방문이 어려우면 상품별 ‘쿠팡에서 찾기’로 주문할 수 있어요</p>
-                <p className="text-[9px] text-slate-400 text-center mt-1">{PARTNERS_NOTICE}</p>
+                <p className="text-[10px] text-slate-400 font-medium text-center mb-3">실제 가격은 PX 매장에서 확인하세요</p>
+                {/* 11/1 장보기 목록 → 쿠팡: 품목별 쿠팡 링크를 펼쳐 보여 줌(자동으로 여러 창을 열지 않음) */}
+                {cartCoupang.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => setShowCartCoupang(v => !v)}
+                      className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-orange-500 text-white py-3 text-sm font-black shadow-lg shadow-orange-200 active:scale-[0.98] transition-transform"
+                    >
+                      이 목록 쿠팡에서 한 번에 받기 <ChevronRight size={14} strokeWidth={3} className={`transition-transform ${showCartCoupang ? 'rotate-90' : ''}`} />
+                    </button>
+                    {showCartCoupang && (
+                      <div className="mt-2 bg-white rounded-2xl border border-orange-100 p-2 space-y-1 max-h-48 overflow-y-auto">
+                        {cartCoupang.map(({ item, url }) => (
+                          <a key={item.id} href={url} target="_blank" rel="noopener sponsored" className="flex items-center justify-between gap-2 rounded-xl px-2 py-2 hover:bg-orange-50">
+                            <span className="text-[12px] font-bold text-slate-700 truncate">{item.name} <span className="text-slate-400">×{cart[item.id]}</span></span>
+                            <span className="flex-shrink-0 text-[11px] font-black text-orange-500">쿠팡에서 보기 ›</span>
+                          </a>
+                        ))}
+                        <p className="text-[10px] text-slate-400 text-center pt-1">품목을 하나씩 눌러 쿠팡 장바구니에 담으세요. 가격은 쿠팡에서 확인하세요.</p>
+                      </div>
+                    )}
+                    {cartOffline > 0 && <p className="text-[10px] text-slate-400 text-center mt-2">주류·담배 {cartOffline}개는 PX 매장에서만 살 수 있어요</p>}
+                  </>
+                )}
+                <p className="text-[9px] text-slate-400 text-center mt-2">{PARTNERS_NOTICE}</p>
               </div>
             )}
           </div>
