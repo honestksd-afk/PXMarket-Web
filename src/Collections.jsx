@@ -30,7 +30,7 @@ export function CollectionsStrip({ onOpen }) {
   );
 }
 
-/** 모음 바텀시트 — 항목마다 쿠팡 검색 링크(subId pxset) + 고지 */
+/** 모음 바텀시트 — 항목마다 쿠팡 검색 링크(subId pxcollect) + 고지 */
 export function CollectionSheet({ collection, onClose }) {
   // 휴대폰 뒤로가기로 닫히도록 (ProductSheet 와 같은 방식)
   useEffect(() => {

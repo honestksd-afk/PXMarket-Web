@@ -591,7 +591,7 @@ export default function App() {
                       onClick={() => setShowCartCoupang(v => !v)}
                       className="w-full flex items-center justify-center gap-1.5 rounded-2xl bg-orange-500 text-white py-3 text-sm font-black shadow-lg shadow-orange-200 active:scale-[0.98] transition-transform"
                     >
-                      이 목록 쿠팡에서 한 번에 받기 <ChevronRight size={14} strokeWidth={3} className={`transition-transform ${showCartCoupang ? 'rotate-90' : ''}`} />
+                      이 목록 쿠팡에서 찾아보기 <ChevronRight size={14} strokeWidth={3} className={`transition-transform ${showCartCoupang ? 'rotate-90' : ''}`} />
                     </button>
                     {showCartCoupang && (
                       <div className="mt-2 bg-white rounded-2xl border border-orange-100 p-2 space-y-1 max-h-48 overflow-y-auto">

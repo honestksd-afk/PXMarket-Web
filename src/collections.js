@@ -1,5 +1,5 @@
 // 군인가족 상황별 모음 — 홈 첫 화면 가로 띠 + 바로가기 주소 ?view=<key>
-// 항목은 쿠팡 검색어(q). 클릭 시 /api/coupang 이 subId pxset 딥링크로 보낸다.
+// 항목은 쿠팡 검색어(q). 클릭 시 /api/coupang 이 subId pxcollect 딥링크로 보낸다.
 // 지킬 것: 주류·담배 넣지 않기, '최저가'·'가장 싼' 같은 단정 문구 쓰지 않기.
 export const COLLECTIONS = [
   {
