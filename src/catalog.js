@@ -77,7 +77,7 @@ export function matches(item, query) {
 // 쿠팡에 등록한 채널 이름과 정확히 같아야 한다(등록 안 된 이름은 '기본값'으로 합쳐짐). 꼬리(_ref)는 붙이지 않는다.
 // 위치: pxcardbtn(목록 카드) / pxdetail(상세 시트) / pxcollect(상황별 모음) / pxcartlist(쇼핑 리스트) / pxsearch(검색)
 // 유입: ?ref=littly…(littly 로 시작) → pxlittly, ?ref=yt…(yt1023px·ytpin1028 등)·shorts → pxshorts 가 위치보다 우선. 그 밖의 ref 는 무시
-const PLACEMENT_ALIAS = { card: 'cardbtn', drinkcard: 'cardbtn', drink: 'detail', set: 'collect', cart: 'cartlist', list: 'cartlist' };
+const PLACEMENT_ALIAS = { card: 'cardbtn', drinkcard: 'cardbtn', drink: 'detail', set: 'collect', deal: 'collect', cart: 'cartlist', list: 'cartlist' };
 
 function refChannel(ref) {
   if (ref.startsWith('littly')) return 'littly';
